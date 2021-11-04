@@ -21,22 +21,22 @@ module Tisch.Internal.Compat
   , pgInt2
   , PGNumeric
   , PGNumericScale
-  , pgRational
-  , pgScientific
-  , pgFixed
+  --, pgRational
+  --, pgScientific
+  --, pgFixed
   ) where
 
-import qualified Control.Exception as Ex
+--import qualified Control.Exception as Ex
 import           Data.Fixed (Fixed(..))
 import qualified Data.Fixed as Fixed
 import           Data.Int
-import           Data.Proxy
-import           Data.Scientific (Scientific, formatScientific)
-import qualified Data.Scientific as Scientific
+--import           Data.Proxy
+import           Data.Scientific (Scientific)
+--import qualified Data.Scientific as Scientific
 import qualified Database.PostgreSQL.Simple.FromField as Pg
 import           GHC.Float (float2Double)
-import           GHC.Real (infinity, notANumber)
-import           GHC.TypeLits (Nat, KnownNat, type (+))
+--import           GHC.Real (infinity, notANumber)
+import           GHC.TypeLits (Nat, type (+))
 import qualified GHC.TypeLits as GHC
 import qualified Opaleye as O
 import qualified Opaleye.Internal.Column as OI
@@ -91,16 +91,16 @@ instance {-# OVERLAPPING #-}
   where queryRunnerColumnDefault = undefined
 
 -- | Orphan. "Tisch.Internal".
-instance OI.PGFractional O.PGFloat4 where
-  pgFromRational = pgFloat4 . fromRational
+--instance OI.PGFractional O.PGFloat4 where
+--  pgFromRational = pgFloat4 . fromRational
 
 -- | Orphan. "Tisch.Internal".
-instance OI.PGNum O.PGFloat4 where
-  pgFromInteger = pgFloat4 . fromInteger
+--instance OI.PGNum O.PGFloat4 where
+--  pgFromInteger = pgFloat4 . fromInteger
 
 -- | Orphan. "Tisch.Internal".
-instance OI.PGNum O.PGInt2 where
-  pgFromInteger = pgInt2 . fromInteger
+--instance OI.PGNum O.PGInt2 where
+--  pgFromInteger = pgInt2 . fromInteger
 
 --------------------------------------------------------------------------------
 
@@ -128,9 +128,11 @@ type instance PGNumericScale Fixed.E12 = 12
 
 instance O.PGOrd (PGNumeric s)
 
+{-
 instance KnownNat s => OI.PGNum (PGNumeric s) where
   pgFromInteger = pgScientific . fromInteger
   {-# INLINE pgFromInteger #-}
+
 
 -- | WARNING: 'pgFromRational' throws 'Ex.RatioZeroDenominator' if given a
 -- positive or negative 'infinity'.
@@ -142,6 +144,8 @@ instance GHC.KnownNat s => OI.PGFractional (PGNumeric s) where
 -- supported.
 --
 -- Returns 'Nothing' in case of positive or negative 'infinity'.
+
+
 pgRational :: KnownNat s => Rational -> Maybe (O.Column (PGNumeric s))
 pgRational x
   | x == infinity    = Nothing
@@ -152,7 +156,9 @@ pgRational x
 pgScientific :: forall s. KnownNat s => Scientific -> O.Column (PGNumeric s)
 pgScientific = OI.literalColumn . HDB.OtherLit . formatScientific
   Scientific.Fixed (Just (fromInteger (GHC.natVal (Proxy :: Proxy s))))
+
 {-# INLINE pgScientific #-}
+
 
 pgFixed
   :: forall e s
@@ -163,6 +169,7 @@ pgFixed = case GHC.natVal (Proxy :: Proxy s) of
   0 -> \(MkFixed x) -> OI.literalColumn (HDB.IntegerLit x)
   _ -> OI.literalColumn . HDB.OtherLit . Fixed.showFixed False
 {-# INLINE pgFixed #-}
+-}
 
 instance OI.QueryRunnerColumnDefault (PGNumeric s) Rational where
   queryRunnerColumnDefault = O.fieldQueryRunnerColumn

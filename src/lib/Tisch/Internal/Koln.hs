@@ -169,6 +169,9 @@ instance {-# OVERLAPPABLE #-}
 
 ---
 
+instance (PgTyped a, Semigroup (Kol a)) => Semigroup (Koln a) where
+  (<>) = liftKoln2 (<>)
+
 -- | Behaves as the 'Monoid' instance for 'Maybe'.
 instance (PgTyped a, Monoid (Kol a)) => Monoid (Koln a) where
   mempty = fromKol mempty

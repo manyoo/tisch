@@ -38,13 +38,13 @@ module Tisch.Internal.Aggregation
   ) where
 
 import qualified Data.Profunctor as P
-import GHC.TypeLits (KnownNat, CmpNat, type (+))
+--import GHC.TypeLits (KnownNat, CmpNat, type (+))
 import qualified Opaleye as O
 import qualified Opaleye.Internal.Column as OI
 import qualified Opaleye.Internal.Aggregate as OI
 import qualified Opaleye.Internal.HaskellDB.PrimQuery as HDB
 
-import Tisch.Internal.Compat (PGNumeric)
+--import Tisch.Internal.Compat (PGNumeric)
 import Tisch.Internal.Fun (PgOrd, PgEq, PgNum, PgIntegral)
 import Tisch.Internal.Kol (Kol(..), PgTyped(..), PGArrayn)
 import Tisch.Internal.Koln (Koln(..))
@@ -121,11 +121,11 @@ groupBy = P.dimap unKol Kol O.groupBy
 -- TODO: Support all possible inputs and ouputs. See PostgreSQL docs.
 class (PgNum a, PgNum b) => AggSum a b
 instance {-# OVERLAPPABLE #-} PgNum a => AggSum a a
-instance AggSum O.PGInt2 O.PGInt8
+--instance AggSum O.PGInt2 O.PGInt8
 instance AggSum O.PGInt4 O.PGInt8
-instance KnownNat s => AggSum O.PGInt8 (PGNumeric s)
-instance AggSum O.PGFloat4 O.PGFloat8
-instance AggSum O.PGInt8 (PGNumeric 0)
+--instance KnownNat s => AggSum O.PGInt8 (PGNumeric s)
+--instance AggSum O.PGFloat4 O.PGFloat8
+--instance AggSum O.PGInt8 (PGNumeric 0)
 
 -- | Add the values in input columns.
 sumgg :: AggSum a b => O.Aggregator (Kol a) (Kol b)
@@ -157,19 +157,19 @@ countRows = Query . fmap Kol . O.countRows . unQuery
 -- TODO: Support all possible inputs and ouputs. See PostgreSQL docs.
 class (PgNum a, PgNum b) => AggAvg a b
 instance {-# OVERLAPPABLE #-} PgNum a => AggAvg a a
-instance AggAvg O.PGFloat4 O.PGFloat8
+--instance AggAvg O.PGFloat4 O.PGFloat8
 -- | Warning: Depending on your choice of @s@, you might be getting less
 -- resolution than expected.
-instance KnownNat s => AggAvg O.PGInt2 (PGNumeric s)
+--instance KnownNat s => AggAvg O.PGInt2 (PGNumeric s)
 -- | Warning: Depending on your choice of @s@, you might be getting less
 -- resolution than expected.
-instance KnownNat s => AggAvg O.PGInt4 (PGNumeric s)
+--instance KnownNat s => AggAvg O.PGInt4 (PGNumeric s)
 -- | Warning: Depending on your choice of @s@, you might be getting less
 -- resolution than expected.
-instance KnownNat s => AggAvg O.PGInt8 (PGNumeric s)
+--instance KnownNat s => AggAvg O.PGInt8 (PGNumeric s)
 -- | Warning: Depending on your choice of @s'@, you might be getting less
 -- resolution than expected.
-instance (KnownNat s, KnownNat s', CmpNat s (s' + 1) ~ 'GT) => AggAvg (PGNumeric s) (PGNumeric s')
+--instance (KnownNat s, KnownNat s', CmpNat s (s' + 1) ~ 'GT) => AggAvg (PGNumeric s) (PGNumeric s')
 
 -- | The average (arithmetic mean) of all input values
 avggg :: AggAvg a b => O.Aggregator (Kol a) (Kol b)
@@ -228,20 +228,20 @@ byteagg = unsafeMakeAggr . HDB.AggrStringAggr . OI.unColumn . unKol
 -- | Instances of 'AggStdDev' can be used with 'stddevgg',
 -- 'stddevpopgg', 'variance' and 'variancepopgg'.
 class (PgNum a, PgNum b) => AggStdDev a b
-instance AggStdDev O.PGFloat4 O.PGFloat8
+--instance AggStdDev O.PGFloat4 O.PGFloat8
 instance AggStdDev O.PGFloat8 O.PGFloat8
 -- | Warning: Depending on your choice of @s@, you might be getting less
 -- resolution than expected.
-instance KnownNat s => AggStdDev O.PGInt2 (PGNumeric s)
+--instance KnownNat s => AggStdDev O.PGInt2 (PGNumeric s)
 -- | Warning: Depending on your choice of @s@, you might be getting less
 -- resolution than expected.
-instance KnownNat s => AggStdDev O.PGInt4 (PGNumeric s)
+--instance KnownNat s => AggStdDev O.PGInt4 (PGNumeric s)
 -- | Warning: Depending on your choice of @s@, you might be getting less
 -- resolution than expected.
-instance KnownNat s => AggStdDev O.PGInt8 (PGNumeric s)
+--instance KnownNat s => AggStdDev O.PGInt8 (PGNumeric s)
 -- | Warning: Depending on your choice of @s'@, you might be getting less
 -- resolution than expected.
-instance (KnownNat s, KnownNat s', CmpNat s (s' + 1) ~ 'GT) => AggStdDev (PGNumeric s) (PGNumeric s')
+--instance (KnownNat s, KnownNat s', CmpNat s (s' + 1) ~ 'GT) => AggStdDev (PGNumeric s) (PGNumeric s')
 
 -- | Sample standard deviation of the input values.
 stddevgg :: AggStdDev a b => O.Aggregator (Kol a) (Kol b)

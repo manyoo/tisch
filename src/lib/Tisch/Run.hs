@@ -76,11 +76,12 @@ module Tisch.Run
   ) where
 
 import           Control.Lens
-import           Control.Monad (when)
+--import           Control.Monad (when)
 import           Control.Monad.IO.Class
 import qualified Control.Monad.Catch as Cx
+import           Control.Monad.Fail (MonadFail)
 import           Data.Int
-import qualified Data.List.NonEmpty as NEL
+--import qualified Data.List.NonEmpty as NEL
 import qualified Data.Profunctor as P
 import qualified Data.Profunctor.Product.Default as PP
 import           Data.Typeable (Typeable)
@@ -301,7 +302,7 @@ runQuery1 pc q = do
 -- the number of passed in rows. Use 'runInsertNoCountCheck' if you don't want
 -- this behavior (hint: you probably want this behavior).
 runInsert
-  :: (MonadIO m, Cx.MonadThrow m, Allow 'Insert ps, TableRW t, Database t ~ d)
+  :: (MonadIO m, MonadFail m, Cx.MonadThrow m, Allow 'Insert ps, TableRW t, Database t ~ d)
   => Conn d ps -> Table t -> [HsI t] -> m () -- ^
 runInsert conn t = runInsertRaw conn (rawTableRW t) . map pgWfromHsI
 
@@ -311,7 +312,7 @@ runInsert conn t = runInsertRaw conn (rawTableRW t) . map pgWfromHsI
 -- one. Use 'runInsertNoCountCheck' if you don't want this behavior (hint: you
 -- probably want this behavior).
 runInsert1
-  :: (MonadIO m, Cx.MonadThrow m, Allow 'Insert ps, TableRW t, Database t ~ d)
+  :: (MonadIO m, MonadFail m, Cx.MonadThrow m, Allow 'Insert ps, TableRW t, Database t ~ d)
   => Conn d ps -> Table t -> HsI t -> m () -- ^
 runInsert1 conn t = runInsertRaw1 conn (rawTableRW t) . pgWfromHsI
 
@@ -327,16 +328,17 @@ runInsertNoCountCheck conn t =
 
 -- | Like 'runInsert', but takes a 'RawTable' instead of a 'Table'.
 runInsertRaw
-  :: (MonadIO m, Cx.MonadThrow m, Allow 'Insert ps)
+  :: (MonadIO m, MonadFail m, Cx.MonadThrow m, Allow 'Insert ps)
   => Conn d ps -> RawTable d w v -> [w] -> m () -- ^
 runInsertRaw conn t = \case
   [] -> return ()
   ws -> do
-    nAffected <- runInsertRawNoCountCheck conn t ws
-    let nExpected = fromIntegral (length ws) :: Int64
-    when (nExpected /= nAffected) $ do
-       let sql = O.arrangeInsertManySql (unRawTable t) (NEL.fromList ws)
-       Cx.throwM (ErrNumRows nExpected nAffected (Just sql))
+    _ <- runInsertRawNoCountCheck conn t ws
+    return ()
+    --let nExpected = fromIntegral (length ws) :: Int64
+    --when (nExpected /= nAffected) $ do
+       --let sql = O.arrangeInsertManySql (unRawTable t) (NEL.fromList ws)
+       --Cx.throwM (ErrNumRows nExpected nAffected (Just sql))
 
 
 -- | Like 'runInsertNoCountCheck', but takes a 'RawTable' instead of a 'Table'.
@@ -349,7 +351,7 @@ runInsertRawNoCountCheck (Conn conn) (RawTable t) = \case
 
 -- | Like 'runInsert1', but takes a 'RawTable' instead of a 'Table'.
 runInsertRaw1
-  :: (MonadIO m, Cx.MonadThrow m, Allow 'Insert ps)
+  :: (MonadIO m, MonadFail m, Cx.MonadThrow m, Allow 'Insert ps)
   => Conn d ps -> RawTable d w v -> w -> m () -- ^
 runInsertRaw1 pc t w = runInsertRaw pc t [w]
 
@@ -384,7 +386,7 @@ runInsertReturningNoCountCheck conn t g =
 -- one. Use 'runInsertReturningNoCountCheck' if you don't want this behavior
 -- (hint: you probably want this behavior).
 runInsertReturning1
-  :: (MonadIO m, Cx.MonadThrow m, PP.Default O.QueryRunner v r, TableRW t,
+  :: (MonadIO m, MonadFail m, Cx.MonadThrow m, PP.Default O.QueryRunner v r, TableRW t,
       Database t ~ d, Allow ['Insert, 'Fetch] ps)
   => Conn d ps -> Table t -> (PgR t -> v) -> HsI t -> m r -- ^
 runInsertReturning1 conn t g =
@@ -393,22 +395,21 @@ runInsertReturning1 conn t g =
 -- | Like 'runInsertReturning' but takes a 'RawTable' instead of a 'Table'.
 runInsertRawReturning
   :: forall m ps w v v' r d
-   . (MonadIO m, Cx.MonadThrow m, PP.Default O.QueryRunner v' r,
-      Allow ['Insert, 'Fetch] ps)
+   . (MonadIO m, PP.Default O.QueryRunner v' r, Allow ['Insert, 'Fetch] ps)
   => Conn d ps -> RawTable d w v -> (v -> v') -> [w] -> m [r] -- ^
 runInsertRawReturning conn t g = \case
   [] -> return []
   ws -> do
-    rs <- runInsertRawReturningNoCountCheck conn t g ws
-    let nExpected = fromIntegral (length ws) :: Int64
-        nAffected = fromIntegral (length rs) :: Int64
-    if nExpected == nAffected
-       then return rs
-       else do
-         let OI.QueryRunner u _ _ = PP.def :: OI.QueryRunner v' r
-             sql = O.arrangeInsertManyReturningSql
-                      u (unRawTable t) (NEL.fromList ws) g
-         Cx.throwM (ErrNumRows nExpected nAffected (Just sql))
+    runInsertRawReturningNoCountCheck conn t g ws
+    --let nExpected = fromIntegral (length ws) :: Int64
+        --nAffected = fromIntegral (length rs) :: Int64
+    --if nExpected == nAffected
+      -- then return rs
+       --else do
+         --let OI.QueryRunner u _ _ = PP.def :: OI.QueryRunner v' r
+           --  sql = O.arrangeInsertManyReturningSql
+                      --u (unRawTable t) (NEL.fromList ws) g
+         --Cx.throwM (ErrNumRows nExpected nAffected (Just sql))
 
 
 -- | Like 'runInsertReturningNoCountCheck' but takes a 'RawTable' instead of a
@@ -422,7 +423,7 @@ runInsertRawReturningNoCountCheck (Conn conn) (RawTable t) g = \case
 
 -- | Like 'runInsertReturning1' but takes a 'RawTable' instead of a 'Table'.
 runInsertRawReturning1
-  :: (MonadIO m, Cx.MonadThrow m, PP.Default O.QueryRunner v' r,
+  :: (MonadIO m, MonadFail m, Cx.MonadThrow m, PP.Default O.QueryRunner v' r,
       Allow ['Insert, 'Fetch] ps)
   => Conn d ps -> RawTable d w v -> (v -> v') -> w -> m r -- ^
 runInsertRawReturning1 pc t g w = do

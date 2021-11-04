@@ -94,8 +94,8 @@ import           Data.Data (Data)
 import           Data.Kind
 import qualified Data.Profunctor as P
 import qualified Data.Profunctor.Product.Default as PP
-import qualified Data.Promotion.Prelude.List as List (Map)
-import           Data.Promotion.Prelude.Bool (If)
+import qualified Data.Singletons.Prelude.List as List (Map)
+import           Data.Singletons.Prelude.Bool (If)
 import           Data.Proxy (Proxy(..))
 import           Data.Singletons
 import           Data.Tagged
@@ -109,8 +109,9 @@ import qualified GHC.TypeLits as GHC
 import           GHC.TypeLits (Symbol, KnownSymbol, symbolVal)
 import qualified Opaleye as O
 import qualified Opaleye.Internal.PackMap as OI
-import qualified Opaleye.Internal.Table as OI
+import qualified Opaleye.Internal.Table as OI hiding (tableColumn)
 import qualified Opaleye.Internal.TableMaker as OI
+import qualified Opaleye.Internal.Unpackspec as OI
 
 import qualified Tisch.Internal.Profunctors as PP
 import           Tisch.Internal.Record (Record(RNil, RCons))
@@ -404,9 +405,9 @@ type TableR t =
   , KnownSymbol (SchemaName t)
   , KnownSymbol (TableName t)
   , RDistributeColProps (Columns t)
-  , PP.Default OI.ColumnMaker (PgR t) (PgR t)
+  , PP.Default OI.Unpackspec (PgR t) (PgR t)
   , PP.ProductProfunctorAdaptor
-       O.TableProperties
+       OI.TableProperties
        (Record (List.Map (Column_NameSym0 :&&&$$$ Column_PropsSym0) (Columns t)))
        Void
        (Record (Columns_NamedPgR t))
@@ -419,7 +420,7 @@ type TableRW t =
   , Record.RMap FnPgWfromPgRField (Columns_NamedPgR t) (Columns_NamedPgW t)
   , Record.RMap FnPgWfromHsIField (Columns_NamedHsI t) (Columns_NamedPgW t)
   , PP.ProductProfunctorAdaptor
-       O.TableProperties
+       OI.TableProperties
        (Record (List.Map (Column_NameSym0 :&&&$$$ Column_PropsSym0) (Columns t)))
        (Record (Columns_NamedPgW t))
        (Record (Columns_NamedPgR t))
@@ -570,7 +571,7 @@ data C (c :: Symbol) = C
 
 -- | Used by 'hsi'.
 instance GHC.IsLabel (c :: Symbol) (C c) where
-  fromLabel _ = C
+  fromLabel = C
   {-# INLINE fromLabel #-}
 
 -- | Helper function for building an 'HsI'. To construct a 'C' use the GHC's
@@ -636,40 +637,40 @@ pgWfromPgR = PgW . Record.rMap FnPgWfromPgRField . unPgR
 --------------------------------------------------------------------------------
 
 -- | Column properties: Read only (not nullable).
-colProps_ro :: PgTyped a => String -> O.TableProperties Void (Kol a)
+colProps_ro :: PgTyped a => String -> OI.TableProperties Void (Kol a)
 colProps_ro n = P.rmap Kol $ OI.TableProperties
   (OI.Writer (OI.PackMap (\f ws -> f (fmap absurd ws, n)))) -- <- dead code
   (OI.View (OI.runViewColumnMaker OI.tableColumn n))
 
 -- | Column properties: Read only (nullable).
-colProps_ron :: PgTyped a => String -> O.TableProperties Void (Koln a)
+colProps_ron :: PgTyped a => String -> OI.TableProperties Void (Koln a)
 colProps_ron n = P.rmap Koln $ OI.TableProperties
   (OI.Writer (OI.PackMap (\f ws -> f (fmap absurd ws, n)))) -- <- dead code
   (OI.View (OI.runViewColumnMaker OI.tableColumn n))
 
 -- | Column properties: Write (no default), Read (not nullable).
-colProps_wr :: PgTyped a => String -> O.TableProperties (Kol a) (Kol a)
+colProps_wr :: PgTyped a => String -> OI.TableProperties (Kol a) (Kol a)
 colProps_wr = P.dimap unKol Kol . O.required
 
 -- | Column properties: Write (no default), Read (nullable).
-colProps_wrn :: PgTyped a => String -> O.TableProperties (Koln a) (Koln a)
+colProps_wrn :: PgTyped a => String -> OI.TableProperties (Koln a) (Koln a)
 colProps_wrn = P.dimap unKoln Koln . O.required
 
 -- | Column properties: Write (optional default), Read (not nullable).
-colProps_wdr :: PgTyped a => String -> O.TableProperties (WDef (Kol a)) (Kol a)
+colProps_wdr :: PgTyped a => String -> OI.TableProperties (WDef (Kol a)) (Kol a)
 colProps_wdr = P.dimap (wdef Nothing Just . fmap unKol) Kol . O.optional
 
 -- | Column properties: Write (optional default), Read (nullable).
-colProps_wdrn :: PgTyped a => String -> O.TableProperties (WDef (Koln a)) (Koln a)
+colProps_wdrn :: PgTyped a => String -> OI.TableProperties (WDef (Koln a)) (Koln a)
 colProps_wdrn = P.dimap (wdef Nothing Just . fmap unKoln) Koln . O.optional
 
 --------------------------------------------------------------------------------
 
--- | 'O.TableProperties' for a single column in @'Columns' t@.
+-- | 'OI.TableProperties' for a single column in @'Columns' t@.
 type family Column_Props (col :: Column Symbol WCap RCap Type Type) :: Type where
   Column_Props ('Column n 'RO r p h) =
-    O.TableProperties Void (Column_PgR ('Column n 'RO r p h))
-  Column_Props col = O.TableProperties (Column_PgW col) (Column_PgR col)
+    OI.TableProperties Void (Column_PgR ('Column n 'RO r p h))
+  Column_Props col = OI.TableProperties (Column_PgW col) (Column_PgR col)
 data Column_PropsSym0 (col :: TyFun (Column Symbol WCap RCap Type Type) Type)
 type instance Apply Column_PropsSym0 t = Column_Props t
 
@@ -757,7 +758,7 @@ instance forall n f t a b.
   ( ColLens n (HsR t) a b, Functor f
   ) => GHC.IsLabel n ((a -> f b) -> ((HsR t) -> f (HsR t)))
  where
-  fromLabel _ = col (Proxy :: Proxy n)
+  fromLabel = col (Proxy :: Proxy n)
   {-# INLINE fromLabel #-}
 
 -- | @#foo@ works like @'col' ('Proxy' :: 'Proxy' "foo")@ in places where a lens-like
@@ -766,7 +767,7 @@ instance forall n f t a b.
   ( ColLens n (HsI t) a b, Functor f
   ) => GHC.IsLabel n ((a -> f b) -> ((HsI t) -> f (HsI t)))
  where
-  fromLabel _ = col (Proxy :: Proxy n)
+  fromLabel = col (Proxy :: Proxy n)
   {-# INLINE fromLabel #-}
 
 -- | @#foo@ works like @'col' ('Proxy' :: 'Proxy' "foo")@ in places where a lens-like
@@ -775,7 +776,7 @@ instance forall n f t a b.
   ( ColLens n (PgR t) a b, Functor f
   ) => GHC.IsLabel n ((a -> f b) -> ((PgR t) -> f (PgR t)))
  where
-  fromLabel _ = col (Proxy :: Proxy n)
+  fromLabel = col (Proxy :: Proxy n)
   {-# INLINE fromLabel #-}
 
 -- | @#foo@ works like @'col' ('Proxy' :: 'Proxy' "foo")@ in places where a lens-like
@@ -784,7 +785,7 @@ instance forall n f t a b.
   ( ColLens n (PgRN t) a b, Functor f
   ) => GHC.IsLabel n ((a -> f b) -> ((PgRN t) -> f (PgRN t)))
  where
-  fromLabel _ = col (Proxy :: Proxy n)
+  fromLabel = col (Proxy :: Proxy n)
   {-# INLINE fromLabel #-}
 
 -- | @#foo@ works like @'col' ('Proxy' :: 'Proxy' "foo")@ in places where a lens-like
@@ -793,7 +794,7 @@ instance forall n f t a b.
   ( ColLens n (PgW t) a b, Functor f
   ) => GHC.IsLabel n ((a -> f b) -> ((PgW t) -> f (PgW t)))
  where
-  fromLabel _ = col (Proxy :: Proxy n)
+  fromLabel = col (Proxy :: Proxy n)
   {-# INLINE fromLabel #-}
 
 --------------------------------------------------------------------------------
@@ -807,27 +808,27 @@ type family Column_ByName (n :: Symbol) (cols :: [Column Symbol WCap RCap Type T
 
 -- | @#foo@ works like @'view' ('col' ('Proxy' :: 'Proxy' "foo"))@.
 instance forall n t a. (ColLens n (HsR t) a a) => GHC.IsLabel n (HsR t -> a) where
-  fromLabel _ = view (col (Proxy :: Proxy n))
+  fromLabel = view (col (Proxy :: Proxy n))
   {-# INLINE fromLabel #-}
 
 -- | @#foo@ works like @'view' ('col' ('Proxy' :: 'Proxy' "foo"))@.
 instance forall n t a. (ColLens n (HsI t) a a) => GHC.IsLabel n (HsI t -> a) where
-  fromLabel _ = view (col (Proxy :: Proxy n))
+  fromLabel = view (col (Proxy :: Proxy n))
   {-# INLINE fromLabel #-}
 
 -- | @#foo@ works like @'view' ('col' ('Proxy' :: 'Proxy' "foo"))@.
 instance forall n t a. (ColLens n (PgR t) a a) => GHC.IsLabel n (PgR t -> a) where
-  fromLabel _ = view (col (Proxy :: Proxy n))
+  fromLabel = view (col (Proxy :: Proxy n))
   {-# INLINE fromLabel #-}
 
 -- | @#foo@ works like @'view' ('col' ('Proxy' :: 'Proxy' "foo"))@.
 instance forall n t a. (ColLens n (PgRN t) a a) => GHC.IsLabel n (PgRN t -> a) where
-  fromLabel _ = view (col (Proxy :: Proxy n))
+  fromLabel = view (col (Proxy :: Proxy n))
   {-# INLINE fromLabel #-}
 
 -- | @#foo@ works like @'view' ('col' ('Proxy' :: 'Proxy' "foo"))@.
 instance forall n t a. (ColLens n (PgW t) a a) => GHC.IsLabel n (PgW t -> a) where
-  fromLabel _ = view (col (Proxy :: Proxy n))
+  fromLabel = view (col (Proxy :: Proxy n))
   {-# INLINE fromLabel #-}
 
 --------------------------------------------------------------------------------

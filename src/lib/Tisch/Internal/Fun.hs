@@ -79,7 +79,7 @@ import Data.Foldable
 import qualified Data.ByteString
 import qualified Data.CaseInsensitive
 import Data.Semigroup (Semigroup(..))
-import qualified GHC.TypeLits as GHC
+--import qualified GHC.TypeLits as GHC
 import qualified Opaleye as O
 import qualified Opaleye.Internal.Column as OI
 import qualified Opaleye.Internal.HaskellDB.PrimQuery as HDB
@@ -132,12 +132,12 @@ instance forall a. PgTyped a => Monoid (Kol (O.PGArray a)) where
 -- | A @'PgNum' a@ instance gives you a @'Num' ('Kol' a)@ instance for free.
 class (PgTyped a, OI.PGNum (PgType a)) => PgNum (a :: k)
 
-instance PgNum O.PGInt2
+--instance PgNum O.PGInt2
 instance PgNum O.PGInt4
 instance PgNum O.PGInt8
-instance PgNum O.PGFloat4
+--instance PgNum O.PGFloat4
 instance PgNum O.PGFloat8
-instance GHC.KnownNat s => PgNum (PGNumeric s)
+--instance GHC.KnownNat s => PgNum (PGNumeric s)
 
 instance (PgNum a, Num (O.Column (PgType a))) => Num (Kol a) where
   fromInteger = Kol . fromInteger
@@ -180,9 +180,9 @@ ifloor = liftKol1 (unsafeFunExpr "floor" . pure . AnyColumn)
 -- for free.
 class (PgTyped a, PgNum a, OI.PGFractional (PgType a)) => PgFractional (a :: k)
 
-instance PgFractional O.PGFloat4
+--instance PgFractional O.PGFloat4
 instance PgFractional O.PGFloat8
-instance GHC.KnownNat s => PgFractional (PGNumeric s)
+--instance GHC.KnownNat s => PgFractional (PGNumeric s)
 
 instance
     ( PgTyped a, PgFractional a
@@ -196,7 +196,7 @@ instance
 -- | A 'PgFloating' instance gives you 'Floating'-support.
 class (PgTyped a, PgFractional a) => PgFloating (a :: k)
 
-instance PgFloating O.PGFloat4
+--instance PgFloating O.PGFloat4
 instance PgFloating O.PGFloat8
 
 -- | @2.718281828459045@

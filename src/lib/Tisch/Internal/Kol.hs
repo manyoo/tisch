@@ -36,8 +36,8 @@ module Tisch.Internal.Kol
  ) where
 
 import Control.Lens
-import Data.Fixed (Fixed(..))
-import qualified Data.Fixed as Fixed
+--import Data.Fixed (Fixed(..))
+--import qualified Data.Fixed as Fixed
 import Data.Kind
 import Data.Foldable
 import qualified Data.Aeson as Aeson
@@ -48,7 +48,7 @@ import Data.Int
 import Data.Proxy (Proxy(..))
 import qualified Data.Profunctor as P
 import qualified Data.Profunctor.Product.Default as PP
-import Data.Scientific (Scientific)
+--import Data.Scientific (Scientific)
 import Data.Tagged
 import qualified Data.Text
 import qualified Data.Text.Lazy
@@ -66,8 +66,7 @@ import qualified Opaleye.Internal.RunQuery as OI
 import qualified Opaleye.Internal.HaskellDB.PrimQuery as HDB
 
 import Tisch.Internal.Compat
-  (PGNumeric, PGNumericScale,
-   pgFloat4, pgFloat8, pgInt2, pgScientific, pgFixed)
+  (PGNumeric, pgFloat4, pgFloat8, pgInt2)
 
 -------------------------------------------------------------------------------
 
@@ -379,13 +378,13 @@ instance ToKol (Data.CaseInsensitive.CI Data.Text.Lazy.Text) O.PGCitext where ko
 instance ToKol Aeson.Value O.PGJson where kol = Kol . O.pgLazyJSON . Aeson.encode
 instance ToKol Aeson.Value O.PGJsonb where kol = Kol . O.pgLazyJSONB . Aeson.encode
 
-instance GHC.KnownNat s => ToKol Integer (PGNumeric s) where kol = Kol . fromInteger
-instance GHC.KnownNat s => ToKol Scientific (PGNumeric s) where kol = Kol . pgScientific
-instance GHC.KnownNat s => ToKol Rational (PGNumeric s) where kol = Kol . fromRational
-instance
-  ( GHC.KnownNat s
-  , Fixed.HasResolution e, GHC.CmpNat s (PGNumericScale e GHC.+ 1) ~ 'LT
-  ) => ToKol (Fixed e) (PGNumeric s) where kol = Kol . pgFixed
+--instance GHC.KnownNat s => ToKol Integer (PGNumeric s) where kol = Kol . fromInteger
+--instance GHC.KnownNat s => ToKol Scientific (PGNumeric s) where kol = Kol . pgScientific
+--instance GHC.KnownNat s => ToKol Rational (PGNumeric s) where kol = Kol . fromRational
+--instance
+--  ( GHC.KnownNat s
+--  , Fixed.HasResolution e, GHC.CmpNat s (PGNumericScale e GHC.+ 1) ~ 'LT
+--  ) => ToKol (Fixed e) (PGNumeric s) where kol = Kol . pgFixed
 
 instance {-# OVERLAPPABLE #-} forall a b. ToKol a b => ToKol [a] (O.PGArray b) where
   kol = kolArray . map (kol :: a -> Kol b)
