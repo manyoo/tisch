@@ -58,7 +58,6 @@ import qualified Data.UUID
 import Data.Word
 import qualified Database.PostgreSQL.Simple.FromField as Pg
 import qualified Database.PostgreSQL.Simple.Types as Pg
-import GHC.Exts (Constraint)
 import qualified GHC.TypeLits as GHC
 import qualified Opaleye as O
 import qualified Opaleye.Internal.Column as OI
