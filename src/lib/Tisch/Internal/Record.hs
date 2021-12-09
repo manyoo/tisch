@@ -141,7 +141,7 @@ instance
 
 -- | Instance required by 'Tisch.rawTableRW', for read-write purposes.
 instance
-    forall p apbcs abs acs (a :: k) b c.
+    forall p apbcs abs acs (a :: *) b c.
     ( PP.ProductProfunctor p
     , PP.ProductProfunctorAdaptor p (Record apbcs) (Record abs) (Record acs)
     ) => PP.ProductProfunctorAdaptor p
@@ -166,7 +166,7 @@ instance
 
 -- | Instance required by 'Tisch.rawTableRO', for read-only purposes.
 instance
-    forall p apbcs acs (a :: k) b c.
+    forall p apbcs acs (a :: *) b c.
     ( PP.ProductProfunctor p
     , PP.ProductProfunctorAdaptor p (Record apbcs) Void (Record acs)
     ) => PP.ProductProfunctorAdaptor p
@@ -233,14 +233,14 @@ class RBuild' (axs :: [(k,Type)]) (r :: Type) where
   rBuild' :: Record axs -> r
 
 instance
-  forall (axs :: [(k,Type)]) (axs' :: [(k,Type)]).
+  forall (axs :: [(*,Type)]) (axs' :: [(*,Type)]).
   (RReverse axs axs') => RBuild' axs (Record axs')
  where
   rBuild' raxs = rReverse raxs
   {-# INLINE rBuild' #-}
 
 instance
-  forall (a :: k) (x :: Type) (axs :: [(k,Type)]) (r :: Type).
+  forall (a :: *) (x :: Type) (axs :: [(*,Type)]) (r :: Type).
   (RBuild' ('(a,x) ': axs) r) => RBuild' axs (Tagged a x -> r)
  where
   rBuild' raxs = \tx -> rBuild' (RCons tx raxs)
@@ -251,9 +251,9 @@ class RReverse (xs :: [(k,Type)]) (sx :: [(k,Type)]) | xs -> sx, sx -> xs where
   rReverse :: Record xs -> Record sx
 
 instance
-  forall (xs :: [(k,Type)]) (sx :: [(k,Type)]).
-  ( RRevApp xs ('[] :: [(k,Type)]) sx
-  , RRevApp sx ('[] :: [(k,Type)]) xs
+  forall (xs :: [(*,Type)]) (sx :: [(*,Type)]).
+  ( RRevApp xs ('[] :: [(*,Type)]) sx
+  , RRevApp sx ('[] :: [(*,Type)]) xs
     -- GHC warns that this constraint is redundant, but it is not.
   ) => RReverse xs sx where
   rReverse l = rRevApp l (RNil :: Record ('[] :: [(k,Type)]))
@@ -273,7 +273,7 @@ instance RRevApp ('[] :: [(k,Type)]) (l2 :: [(k,Type)]) (l2 :: [(k,Type)]) where
   {-# INLINE rRevApp #-}
 
 instance
-  forall (x :: (k,Type)) (l :: [(k,Type)]) (l' :: [(k,Type)]) (z :: [(k,Type)]).
+  forall (x :: (*,Type)) (l :: [(*,Type)]) (l' :: [(*,Type)]) (z :: [(*,Type)]).
   (RRevApp l (x ': l') z) => RRevApp (x ': l) l' z
  where
   rRevApp (RCons x l) l' = rRevApp l (RCons x l')
