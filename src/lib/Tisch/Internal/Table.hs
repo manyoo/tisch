@@ -96,13 +96,13 @@ import qualified Data.Profunctor as P
 import qualified Data.Profunctor.Product.Default as PP
 import qualified Data.Singletons.Prelude.List as List (Map)
 import           Data.Singletons.Prelude.Bool (If)
-import           Data.Proxy (Proxy(..))
+-- import           Data.Proxy (Proxy(..))
 import           Data.Singletons
 import           Data.Tagged
 import           Data.Type.Equality
 import           Data.Typeable (Typeable)
 import           Data.Void
-import           GHC.Exts (Constraint)
+-- import           GHC.Exts (Constraint)
 import qualified GHC.OverloadedLabels as GHC
 import           GHC.Generics (Generic)
 import qualified GHC.TypeLits as GHC
