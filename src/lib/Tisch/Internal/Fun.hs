@@ -78,7 +78,6 @@ import Control.Lens ()
 import Data.Foldable
 import qualified Data.ByteString
 import qualified Data.CaseInsensitive
-import Data.Semigroup (Semigroup(..))
 --import qualified GHC.TypeLits as GHC
 import qualified Opaleye as O
 import qualified Opaleye.Internal.Column as OI
