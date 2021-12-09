@@ -79,7 +79,6 @@ import           Control.Lens
 --import           Control.Monad (when)
 import           Control.Monad.IO.Class
 import qualified Control.Monad.Catch as Cx
-import           Control.Monad.Fail (MonadFail)
 import           Data.Int
 --import qualified Data.List.NonEmpty as NEL
 import qualified Data.Profunctor as P
